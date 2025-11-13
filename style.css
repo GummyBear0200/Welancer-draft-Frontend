@@ -11,23 +11,15 @@
     --error-bg: #fbe9e7;
 }
 
-/* --- 2. BODY & BACKGROUND ANIMATION (Still Active) --- */
+/* --- 2. BODY & BACKGROUND ANIMATION --- */
 
-/* Define the slow, subtle gradient movement */
 @keyframes backgroundMovement {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 body {
-    /* Apply new professional font */
     font-family: 'Poppins', sans-serif;
     margin: 0;
     color: var(--text-color);
@@ -36,7 +28,6 @@ body {
     align-items: center;
     min-height: 100vh;
     
-    /* Animated Background Properties */
     background-size: 400% 400%; 
     background-image: linear-gradient(
         -45deg,
@@ -49,69 +40,52 @@ body {
     animation: backgroundMovement 30s ease infinite; 
 }
 
-/* Update all headings for a consistent, professional look */
 h1, h2, h3, h4 {
     font-family: 'Poppins', sans-serif;
     font-weight: 600; 
     line-height: 1.2;
 }
 
-/* --- 3. FLOATING BACKGROUND ELEMENTS (Revised for Visibility) --- */
+/* --- 3. FLOATING BACKGROUND ELEMENTS --- */
 
-/* Container for all floating items */
-/* Container for all floating items - now uses fixed positioning to cover the screen */
 .floating-elements {
-    /* KEY CHANGE: Fixed position breaks it out of the login-container card */
     position: fixed; 
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    z-index: 0; /* Ensures it's behind the login card */
+    z-index: 0; 
     pointer-events: none;
 }
 
-/* Revised keyframes to keep elements visible for a long time as they float up */
 @keyframes floatAndFade {
-    0% {
-        opacity: 0.5; /* Start visible at the bottom */
-        transform: translateY(0) rotate(0deg) scale(0.8);
-    }
-    50% {
-        opacity: 1; /* Fully visible mid-screen */
-        transform: translateY(-50vh) rotate(180deg) scale(1.1);
-    }
-    100% {
-        opacity: 0; /* Fade out at the top */
-        transform: translateY(-100vh) rotate(360deg) scale(0.9);
-    }
+    0% { opacity: 0.5; transform: translateY(0) rotate(0deg) scale(0.8); }
+    50% { opacity: 1; transform: translateY(-50vh) rotate(180deg) scale(1.1); }
+    100% { opacity: 0; transform: translateY(-100vh) rotate(360deg) scale(0.9); }
 }
 
 .floating-elements span {
     position: absolute;
     display: block;
     list-style: none;
-    width: 60px; /* Increased base size */
+    width: 60px; 
     height: 60px;
     bottom: -100px; 
-    animation: floatAndFade 30s linear infinite; /* Increased duration for slower movement */
+    animation: floatAndFade 30s linear infinite; 
     pointer-events: none; 
 }
 
-/* Use pseudo-elements and emojis for system-related icons */
 .floating-elements span::before {
-    content: '⭐'; /* Default: Star/KPI */
-    font-size: 50px; /* Made the emoji much larger */
+    content: '⭐'; 
+    font-size: 50px; 
     opacity: 1;
 }
+.floating-elements span:nth-child(2n)::before { content: '📊'; }
+.floating-elements span:nth-child(3n)::before { content: '⚙️'; }
+.floating-elements span:nth-child(5n)::before { content: '💻'; }
 
-/* Override content for specific floating elements (Randomized icons) */
-.floating-elements span:nth-child(2n)::before { content: '📊'; } /* Chart/Analytics */
-.floating-elements span:nth-child(3n)::before { content: '⚙️'; } /* HR/Settings */
-.floating-elements span:nth-child(5n)::before { content: '💻'; } /* Project/Tech */
-
-/* Randomizing starting positions and animation properties for uniqueness */
+/* Animation timing and sizing for variance */
 .floating-elements span:nth-child(1) { left: 10%; width: 40px; height: 40px; animation-delay: 0s; animation-duration: 25s; }
 .floating-elements span:nth-child(2) { left: 20%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
 .floating-elements span:nth-child(3) { left: 25%; width: 25px; height: 25px; animation-delay: 4s; animation-duration: 20s; }
@@ -129,7 +103,7 @@ h1, h2, h3, h4 {
 .floating-elements span:nth-child(15) { left: 75%; width: 55px; height: 55px; animation-delay: 12s; animation-duration: 26s; }
 
 
-/* --- 4. LOGIN PAGE STYLING (Redesigned) --- */
+/* --- 4. LOGIN PAGE STYLING (FIXED) --- */
 .login-container {
     background-color: var(--card-bg);
     padding: 40px;
@@ -140,7 +114,7 @@ h1, h2, h3, h4 {
     display: flex;
     flex-direction: column;
     position: relative; 
-    z-index: 2; /* Ensures the card is above the floating elements */
+    z-index: 2; 
 }
 
 .login-container h1 {
@@ -269,6 +243,7 @@ h1, h2, h3, h4 {
     display: none;
     min-height: 100vh;
     width: 100vw;
+    display: flex; /* Use flex to manage sidebar and main content */
 }
 
 /* Sidebar Styling - Elevated Design */
@@ -479,7 +454,6 @@ h1, h2, h3, h4 {
     width: 150px;
 }
 
-/* Ensure the two main info cards span the rest of the space */
 .profile-card:nth-child(2) {
     grid-column: 2 / 3;
 }
@@ -488,7 +462,6 @@ h1, h2, h3, h4 {
     grid-column: 3 / 4;
 }
 
-/* Responsive adjustments for Profile */
 @media (max-width: 900px) {
     .profile-container {
         grid-template-columns: 1fr;
@@ -575,6 +548,39 @@ h1, h2, h3, h4 {
 /* Role-Based Classes (Controlled by JS) */
 .manager-only { display: none !important; }
 .member-only { display: none !important; }
+
+/* Chart Visualization */
+.chart-container {
+    width: 100%;
+    margin-top: 20px;
+}
+
+.chart-bar-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.chart-label {
+    width: 150px;
+    text-align: right;
+    margin-right: 10px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.chart-bar {
+    height: 25px;
+    background-color: var(--primary);
+    color: white;
+    text-align: right;
+    line-height: 25px;
+    padding-right: 10px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    box-sizing: border-box;
+    min-width: 50px; 
+}
 
 /* --- 10. MODAL STYLING --- */
 #prototype-modal {

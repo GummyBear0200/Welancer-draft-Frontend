@@ -8,12 +8,13 @@ let MOCK_TASKS = [
     { id: 5, title: "Prototype UI/UX Wireframes", assignedTo: "member", status: "inprogress", userId: 3, projectId: 1, contribution: 70 }
 ];
 
+// Added user roles and login credentials
 let MOCK_LEADERBOARD = [
-    { name: "John Clarence", score: 1250, rank: 1, id: 4, completedTasks: 1 },
-    { name: "Jay-em R.", score: 1100, rank: 2, id: 2, completedTasks: 1 },
-    { name: "Charles V.", score: 980, rank: 3, id: 1, completedTasks: 0 },
-    { name: "Rcjie V.", score: 750, rank: 4, id: 3, completedTasks: 0 },
-    { name: "Johannes T.", score: 620, rank: 5, id: 5, completedTasks: 1 },
+    { name: "Charles V.", score: 980, rank: 3, id: 1, completedTasks: 0, username: "charles", password: "password", role: "member" },
+    { name: "Jay-em R.", score: 1100, rank: 2, id: 2, completedTasks: 1, username: "manager", password: "password", role: "manager" }, // Manager Login (ID: 2)
+    { name: "Rcjie V.", score: 750, rank: 4, id: 3, completedTasks: 0, username: "rcjie", password: "password", role: "member" },
+    { name: "John Clarence", score: 1250, rank: 1, id: 4, completedTasks: 1, username: "member", password: "password", role: "member" }, // Member Login (ID: 4)
+    { name: "Johannes T.", score: 620, rank: 5, id: 5, completedTasks: 1, username: "johannes", password: "password", role: "member" },
 ];
 
 const MOCK_PROJECTS = [
@@ -43,7 +44,6 @@ function getUserNameById(id) {
     return MOCK_LEADERBOARD.find(u => u.id === id)?.name || 'N/A';
 }
 
-
 // --- MODAL / OVERLAY IMPLEMENTATION ---
 
 function openModal(title, content) {
@@ -65,6 +65,10 @@ function viewTaskDetails(taskId) {
 
     const assignedUser = getUserNameById(task.userId);
     const projectName = MOCK_PROJECTS.find(p => p.id === task.projectId)?.name || 'N/A';
+    
+    const roleHintText = currentUserRole === 'manager' 
+        ? "This provides the Manager with the necessary level of **Transparency** over team activities."
+        : "This view is for transparency on your own tasks.";
 
     const content = `
         <p><strong>Task Title:</strong> ${task.title}</p>
@@ -72,7 +76,7 @@ function viewTaskDetails(taskId) {
         <p><strong>Assigned To:</strong> ${assignedUser}</p>
         <p><strong>Project:</strong> ${projectName}</p>
         <p><strong>Contribution Quality:</strong> ${task.contribution}%</p>
-        <p class="role-hint">This provides the Manager with the necessary level of **Transparency** over team activities.</p>
+        <p class="role-hint">${roleHintText}</p>
     `;
     openModal(`Task Details: ${task.id}`, content);
 }
@@ -82,7 +86,7 @@ function completeTask(taskId) {
     
     if (task && task.status !== 'complete' && task.userId === currentUserId) {
         task.status = 'complete';
-        task.contribution = 100; // Finalize contribution
+        task.contribution = 100;
         
         const user = MOCK_LEADERBOARD.find(u => u.id === currentUserId);
         if (user) {
@@ -100,6 +104,11 @@ function completeTask(taskId) {
 }
 
 function assignNewTask() {
+    if (currentUserRole !== 'manager') {
+        openModal('Access Denied', '<p>Only Managers can assign new tasks.</p>');
+        return;
+    }
+    
     const taskTitle = prompt("Enter the new task title (e.g., 'Develop API Endpoints'):");
     if (!taskTitle) return;
 
@@ -109,19 +118,24 @@ function assignNewTask() {
         title: taskTitle,
         assignedTo: "member",
         status: "pending",
-        userId: 1, 
+        userId: 4, // Defaulting to John Clarence (member)
         projectId: 1,
         contribution: 0 
     };
 
     MOCK_TASKS.push(newTask);
     
-    openModal('Task Assignment Success 🎉', `<p>New task <strong>"${taskTitle}"</strong> has been successfully assigned to Charles V. Check the Task List!</p>`);
+    openModal('Task Assignment Success 🎉', `<p>New task <strong>"${taskTitle}"</strong> has been successfully assigned to John Clarence. Check the Task List!</p>`);
     
     loadDashboard(currentPage);
 }
 
 function startNewProject() {
+    if (currentUserRole !== 'manager') {
+        openModal('Access Denied', '<p>Only Managers can initiate new projects.</p>');
+        return;
+    }
+    
     const content = `
         <form onsubmit="event.preventDefault(); submitNewProject(this);">
             <div class="input-group"><label>Project Name</label><input type="text" id="proj-name" required value="New Internal System 2026"></div>
@@ -258,8 +272,12 @@ function getLeaderboardChartHTML() {
     });
 
     return `
-        <div class="chart-container">
-            ${chartBars}
+        <div class="card full-width">
+            <h3>Live Leaderboard Score Visualization</h3>
+            <p class="role-hint">This visualization highlights top performers based on accumulated KPI scores.</p>
+            <div class="chart-container">
+                ${chartBars}
+            </div>
         </div>
     `;
 }
@@ -500,11 +518,7 @@ function renderAdminAnalyticsPage() {
             ${metricsHTML}
         </div>
 
-        <div class="card full-width">
-            <h3>Live Leaderboard Score Visualization</h3>
-            <p class="role-hint">This visualization highlights top performers based on accumulated KPI scores.</p>
-            ${chartHTML}
-        </div>
+        ${chartHTML}
     `;
 }
 
@@ -512,7 +526,7 @@ function renderAdminAnalyticsPage() {
 function renderProfilePage() {
     const user = MOCK_LEADERBOARD.find(u => u.id === currentUserId);
     if (!user) {
-        return `<div class="card full-width error-card"><h3>User Data Not Found</h3></div>`;
+        return `<div class="card full-width error-card"><h3>User Data Not Found</h3><p>Please log in again.</p></div>`;
     }
 
     const tasks = MOCK_TASKS.filter(t => t.userId === currentUserId);
@@ -520,9 +534,8 @@ function renderProfilePage() {
     const totalTasks = tasks.length;
     const completionRate = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(0) : 0;
 
-    // Simulate tasks they worked on
     let taskListHTML = '<ul>';
-    tasks.slice(0, 3).forEach(task => { // Show top 3 recent tasks
+    tasks.slice(0, 3).forEach(task => { 
         taskListHTML += `<li>${task.title} - ${getStatusBadge(task.status)}</li>`;
     });
     if (totalTasks > 3) {
@@ -590,8 +603,15 @@ function renderManagerOnlyContent() {
     `;
 }
 
+// *** CRITICAL FIX APPLIED HERE ***
 function renderMemberOnlyContent() {
     const user = MOCK_LEADERBOARD.find(u => u.id === currentUserId);
+    
+    // Safety check: if user data is missing, display a controlled error message.
+    if (!user) {
+        return `<div class="card member-only" id="member-performance"><h3>My Performance Summary</h3><p class="error-card">⚠️ Error: Could not load user data. Try logging out and back in.</p></div>`;
+    }
+    
     const totalTasks = MOCK_TASKS.filter(t => t.userId === currentUserId).length;
     const completionRate = totalTasks > 0 ? ((user.completedTasks / totalTasks) * 100) : 0;
 
@@ -604,13 +624,14 @@ function renderMemberOnlyContent() {
         </div>
     `;
 }
+// **********************************
 
 // --- MAIN RENDERING & ROUTING ---
 
 function getPageContent(pageName) {
     switch(pageName) {
         case 'profile':
-            return renderProfilePage(); // NEW PAGE
+            return renderProfilePage(); 
         case 'projects':
             return renderProjectsPage();
         case 'performance':
@@ -626,7 +647,6 @@ function getPageContent(pageName) {
 }
 
 function getSidebarHTML() {
-    // Added icons to the sidebar items
     const sidebarItems = [
         { name: 'Dashboard', id: 'dashboard', icon: '🏠' },
         { name: 'Profile', id: 'profile', icon: '👤' }, 
@@ -642,7 +662,6 @@ function getSidebarHTML() {
             return; 
         }
         const activeClass = item.id === currentPage ? 'active' : '';
-        // Included the icon in the link content
         navLinks += `<a href="#" class="${activeClass}" onclick="renderPage('${item.id}')">${item.icon} ${item.name}</a>`;
     });
 
@@ -660,18 +679,16 @@ function renderPage(pageName) {
 }
 
 function loadDashboard(pageName = 'dashboard') {
-    // 1. Save the current page to localStorage for persistence
     localStorage.setItem('currentPage', pageName);
 
-    // 2. Hide login container
+    // 1. Hide login container
     document.querySelector('.login-container').style.display = 'none';
 
-    // *** FIX: HIDE THE FLOATING BACKGROUND ***
+    // 2. Hide the floating background
     const floatingBg = document.getElementById('floating-bg');
     if (floatingBg) {
         floatingBg.style.display = 'none';
     }
-    // *****************************************
     
     const appRoot = document.getElementById('app-root');
     const userName = getUserNameById(currentUserId) || currentUserRole.toUpperCase();
@@ -692,10 +709,12 @@ function loadDashboard(pageName = 'dashboard') {
         </main>
     `;
 
+    // 3. Ensure app-root is visible and set body styling for app view
     appRoot.style.display = 'flex';
     document.body.style.justifyContent = 'flex-start';
     document.body.style.alignItems = 'stretch';
     
+    // 4. Apply role-based visibility to content blocks
     updateUIVisibility(currentUserRole);
 }
 
@@ -711,7 +730,7 @@ function updateUIVisibility(role) {
     });
 }
 
-// --- PERSISTENCE LOGIC ---
+// --- PERSISTENCE & LOGIN LOGIC ---
 
 function checkLoginStateOnLoad() {
     const role = localStorage.getItem('userRole');
@@ -721,15 +740,16 @@ function checkLoginStateOnLoad() {
 
 
     if (role && id) {
-        // State found in localStorage: restore session
+        // State found: restore session
         currentUserRole = role;
         currentUserId = parseInt(id);
         currentPage = storedPage || 'dashboard'; 
         loadDashboard(currentPage);
     } else {
-        // No state found: show login page (and ensure floating background is visible)
+        // No state found: show login page 
         document.getElementById('app-root').style.display = 'none';
-        // Ensure login container is visible and centered if not logged in
+        
+        // Ensure login container is visible and centered
         document.querySelector('.login-container').style.display = 'flex';
         document.body.style.justifyContent = 'center';
         document.body.style.alignItems = 'center';
@@ -742,27 +762,22 @@ function checkLoginStateOnLoad() {
 }
 
 
-// --- LOGIN LOGIC ---
-document.getElementById('loginForm').addEventListener('submit', function(event) {
+function handleLogin(event) {
     event.preventDefault();
-    const username = document.getElementById('username').value.toLowerCase();
-    const password = document.getElementById('password').value; 
+    const loginUsername = document.getElementById('username').value.toLowerCase();
+    const loginPassword = document.getElementById('password').value; 
 
     const messageEl = document.getElementById('login-message');
     messageEl.style.display = 'none';
 
-    if (password === 'password') {
-        if (username === 'manager') {
-            currentUserRole = 'manager';
-            currentUserId = 2; // Jay-em R.
-        } else if (username === 'member') {
-            currentUserRole = 'member';
-            currentUserId = 4; // John Clarence
-        } else {
-            messageEl.textContent = 'Invalid username. Try "manager" or "member".';
-            messageEl.style.display = 'block';
-            return;
-        }
+    // Find user in the MOCK_LEADERBOARD based on credentials
+    const authenticatedUser = MOCK_LEADERBOARD.find(u => 
+        u.username === loginUsername && u.password === loginPassword
+    );
+
+    if (authenticatedUser) {
+        currentUserRole = authenticatedUser.role; 
+        currentUserId = authenticatedUser.id;
 
         // Save state to localStorage upon successful login
         localStorage.setItem('userRole', currentUserRole);
@@ -770,10 +785,10 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
 
         loadDashboard();
     } else {
-        messageEl.textContent = 'Invalid password.';
+        messageEl.textContent = 'Invalid username or password. Try "manager" or "member".';
         messageEl.style.display = 'block';
     }
-});
+}
 
 
 function logout() {
@@ -789,7 +804,7 @@ function logout() {
     currentUserRole = '';
     currentUserId = 0;
     currentPage = 'dashboard';
-    window.location.reload();
+    window.location.reload(); 
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -803,6 +818,12 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         </div>
     `);
+    
+    // Attach form handler
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
 
     // Check login state immediately when the page loads
     checkLoginStateOnLoad();
